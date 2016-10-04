@@ -4,18 +4,13 @@ const fs = require("fs");
 bluebird.promisifyAll(fs);
 global.Promise = bluebird;
 
-const CSVToArray = require("./lib/CSVToArray.js");
-const CSVParser = require("./lib/CSVParser.js");
+const ibcData = require("./lib/ibcData");
 
-Promise.all([
-	fs.readFileAsync(__dirname + "/data/ibc-incidents", "utf8")
-	.then(CSVToArray)
-	.then(CSVParser),
-	fs.readFileAsync(__dirname + "/data/ibc-individuals", "utf8")
-	.then(CSVToArray)
-	.then(CSVParser)
-]).then(a => {
-	const [ incidents, individuals ] = a;
+ibcData()
+.then(ibcData => {
+	const { incidents, individuals } = ibcData;
+
+	console.log(incidents, individuals);
 
 	const data = incidents.forEach(incident => {
 		incident.individuals =
@@ -23,4 +18,4 @@ Promise.all([
 	});
 
 	return incidents;
-}).then(incidents => fs.saveFileAsync(__dirname + "/incidents.json", JSON.stringify(incidents, null, '\t')));
+}).then(incidents => fs.writeFileAsync(__dirname + "/incidents.json", JSON.stringify(incidents, null, '\t')));
