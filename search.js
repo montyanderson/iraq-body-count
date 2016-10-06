@@ -10,9 +10,11 @@ const db = redis.createClient();
 
 function search(s) {
 	const key = Object.keys(s)[0];
-	const query = s[key];
+	const query = rsearch(s[key]);
 	let cursor = 0;
 	const results = new Map();
+
+	console.log(query);
 
 	function recursive() {
 		return db.zscanAsync("individuals:" + key, cursor, "MATCH", query)
@@ -32,7 +34,7 @@ function search(s) {
 				}
 			}
 
-			if(cursor > 0) return recursive();
+			if(results.size < 30 && cursor > 0) return recursive();
 			return results;
 		});
 	}
@@ -44,14 +46,16 @@ function search(s) {
 }
 
 function load(a) {
+	console.log(a);
+
 	const fields = ["ibcCode", "sex", "earliestDate", "latestDate", "parentalStatus", "nameOrIdentifyingDetails", "location", "maritalStatus", "age"];
 
 	const query = db.multi();
 
 	fields.forEach(field => {
-		if(!a[field]) {
+		//if(!a[field]) {
 			query.ZRANGEBYSCORE("individuals:" + field, a.id, a.id, "LIMIT", 0, 1);
-		}
+		//}
 	});
 
 	return query.execAsync()
@@ -63,10 +67,5 @@ function load(a) {
 		return a;
 	});
 }
-
-const timer = new NanoTimer();
-
-search({ location: "*" })
-.then(results => console.log(results));
 
 module.exports = search;
